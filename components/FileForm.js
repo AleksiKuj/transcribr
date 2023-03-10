@@ -2,17 +2,36 @@ import { useState } from "react"
 import axios from "axios"
 import { PulseLoader } from "react-spinners"
 import Select from "react-select"
+import { languages } from "../data/languages"
 
-const FileForm = ({ loading, setLoading, setResult, result, setError }) => {
+const FileForm = ({
+  loading,
+  setLoading,
+  setResult,
+  setTranslation,
+  result,
+  setError,
+  setShowTranslation,
+  showTranslation,
+  translation,
+}) => {
   const [file, setFile] = useState(null)
   const [type, setType] = useState("")
+  const [language, setLanguage] = useState("")
 
-  const types = ["conversation", "poem", "song", "speech", "other"]
+  //types for formatting
+  const types = ["Conversation", "Poem", "Song", "Speech", "Other"]
 
   const options = types.map((type) => ({
     value: type,
     label: type,
   }))
+
+  const languageOptions = languages.map((language) => ({
+    value: language.id,
+    label: language.name,
+  }))
+
   const handleFileChange = (e) => {
     setFile(e.target.files[0])
     console.log(file)
@@ -20,16 +39,23 @@ const FileForm = ({ loading, setLoading, setResult, result, setError }) => {
   const handleTypeChange = (e) => {
     //if valid option
     const optionExists = options.some((option) => option.value === e.value)
-
     if (optionExists) {
       setType(e.value)
-      console.log(type)
+    }
+  }
+  const handleLanguageChange = (e) => {
+    //if valid option
+    const optionExists = languageOptions.some(
+      (option) => option.value === e.value
+    )
+    if (optionExists) {
+      setLanguage(e.value)
+      console.log(language)
     }
   }
 
   const handleSubmit = async (event) => {
     event.preventDefault()
-
     const formData = new FormData()
     formData.append("file", file)
 
@@ -44,6 +70,7 @@ const FileForm = ({ loading, setLoading, setResult, result, setError }) => {
         naxContentLength: Infinity,
       })
       setResult(response.data.result)
+      setTranslation("")
       setLoading(false)
     } catch (error) {
       setError(error.message)
@@ -62,18 +89,60 @@ const FileForm = ({ loading, setLoading, setResult, result, setError }) => {
   const editResult = async () => {
     try {
       setLoading(true)
+      if (showTranslation) {
+        const response = await axios.post(
+          "/api/edit",
+          JSON.stringify({ result: translation, type }),
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        )
+        setTranslation(response.data.result)
+      } else {
+        const response = await axios.post(
+          "/api/edit",
+          JSON.stringify({ result, type }),
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        )
+        setResult(response.data.result)
+      }
+      setLoading(false)
+    } catch (error) {
+      console.error("Error editing:", error)
+      setError(error.message)
+      if (!error.response) {
+        console.error(error)
+        setError("Unkown has error occurred")
+      } else if (error.response.status === 400) {
+        setError("Could not edit text, the file might be too large.")
+      }
+      setLoading(false)
+      setTimeout(() => {
+        setError("")
+      }, 5000)
+    }
+  }
 
+  const translateResult = async () => {
+    try {
+      setLoading(true)
       const response = await axios.post(
-        "/api/edit",
-        JSON.stringify({ result, type }),
+        "/api/translate",
+        JSON.stringify({ result, language }),
         {
           headers: {
             "Content-Type": "application/json",
           },
         }
       )
-      console.log(response)
-      setResult(response.data.result)
+      setTranslation(response.data.result)
+      setShowTranslation(true)
       setLoading(false)
     } catch (error) {
       console.log("Error editing:", error)
@@ -170,13 +239,33 @@ const FileForm = ({ loading, setLoading, setResult, result, setError }) => {
                     data-testid="loader"
                   />
                 ) : (
-                  "Fix result"
+                  "Format result"
                 )}
               </button>
-              <p className="text-sm w-full sm:w-3/12 text-slate-600  dark:text-darkMode-500">
-                "Fix result" attempts to make the result more readable but might
-                not work for large files.
-              </p>
+
+              {/* translate button, disabled if no language select */}
+              <button
+                onClick={() => translateResult()}
+                type="button"
+                disabled={loading || !result || !language ? true : false}
+                className={`leading-6 px-3 py-1 w-full sm:w-3/12  text-white bg-blue-500 hover:bg-blue-600 rounded dark:bg-darkMode-300 dark:text-darkMode-700 ${
+                  !loading && result && language
+                    ? "cursor-pointer"
+                    : "cursor-default"
+                }`}
+              >
+                {loading ? (
+                  <PulseLoader
+                    color={"#FFFFFF"}
+                    loading={loading}
+                    size={10}
+                    aria-label="Loading Spinner"
+                    data-testid="loader"
+                  />
+                ) : (
+                  "Translate"
+                )}
+              </button>
             </>
           )}
         </div>
@@ -186,13 +275,27 @@ const FileForm = ({ loading, setLoading, setResult, result, setError }) => {
           <div className="flex w-full justify-center pb-2">
             <Select
               options={options}
-              value={type}
+              value={type.name}
               onChange={handleTypeChange}
               noOptionsMessage={() => null}
               clearValueOnReset={false}
               id="long-value-select"
               instanceId="long-value-select"
-              placeholder={type ? type : "Optional: select type"}
+              placeholder={type ? type : "Optional: select type for formatting"}
+              className="w-3/6 px-1"
+            />
+            {/* language select */}
+            <Select
+              options={languageOptions}
+              value={language.name}
+              onChange={handleLanguageChange}
+              noOptionsMessage={() => null}
+              clearValueOnReset={false}
+              id="long-value-select"
+              instanceId="long-value-select"
+              placeholder={
+                language ? language : "Select language for translation"
+              }
               className="w-3/6 px-1"
             />
           </div>

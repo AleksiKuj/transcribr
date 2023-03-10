@@ -12,14 +12,14 @@ apiRoute.post(async (req, res) => {
   try {
     const input = req.body.result
     const type = req.body.type || ""
+    console.log(input)
     const response = await openai.createChatCompletion({
       model: "gpt-3.5-turbo",
       messages: [
         {
           role: "system",
-          content: `Fix spelling mistakes, add punctuation and line breaks where appropriate. ${
-            type && `The text to fix is from a ${type}`
-          }`,
+          content: `Fix spelling mistakes, add punctuation and line breaks where appropriate. 
+          ${type && `The text to fix is from a ${type}`}`,
         },
         { role: "user", content: input },
       ],

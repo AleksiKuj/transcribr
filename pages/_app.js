@@ -4,10 +4,13 @@ import "../styles/globals.css"
 import Footer from "../components/Footer"
 import FileForm from "../components/FileForm"
 import Header from "../components/Header"
+import Result from "../components/Result"
 import ErrorNotification from "../components/ErrorNotification"
 
 export default function App() {
   const [result, setResult] = useState("")
+  const [translation, setTranslation] = useState("")
+  const [showTranslation, setShowTranslation] = useState(false)
   const [loading, setLoading] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
   const [error, setError] = useState("")
@@ -29,15 +32,20 @@ export default function App() {
             loading={loading}
             setLoading={setLoading}
             setResult={setResult}
+            setTranslation={setTranslation}
+            translation={translation}
+            setShowTranslation={setShowTranslation}
+            showTranslation={showTranslation}
             result={result}
             setError={setError}
           />
 
-          <div className=" m-2">
-            <p className="whitespace-pre-line dark:text-darkMode-600">
-              {result}
-            </p>
-          </div>
+          <Result
+            translation={translation}
+            setShowTranslation={setShowTranslation}
+            result={result}
+            showTranslation={showTranslation}
+          />
         </main>
         <Footer />
       </div>
